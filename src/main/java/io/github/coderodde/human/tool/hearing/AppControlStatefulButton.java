@@ -3,9 +3,10 @@ package io.github.coderodde.human.tool.hearing;
 import javafx.scene.control.Button;
 
 /**
- * This class implements a button with state information.
+ * This class implements a button with state information for controlling the 
+ * hearing measurement process.
  */
-public final class StatefulButton extends Button {
+public final class AppControlStatefulButton extends Button {
     
     public enum State {
         START,
@@ -15,7 +16,7 @@ public final class StatefulButton extends Button {
     
     private State state = State.START;
     
-    public StatefulButton() {
+    public AppControlStatefulButton() {
         super("Start");
     }
     

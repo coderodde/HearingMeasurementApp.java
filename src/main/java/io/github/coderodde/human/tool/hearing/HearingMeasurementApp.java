@@ -23,7 +23,7 @@ public class HearingMeasurementApp extends Application {
     @Override
     public void start(Stage stage) {
         Label label = new Label(BeepingThread.MIN_FREQUENCY + " Hz");
-        StatefulButton button = new StatefulButton();
+        AppControlStatefulButton button = new AppControlStatefulButton();
         
         Font labelFont  = Font.font("System", FontWeight.BOLD, 48);
         Font buttonFont = Font.font("System", FontWeight.BOLD, 20);
@@ -52,13 +52,8 @@ public class HearingMeasurementApp extends Application {
             button.click();
             
             switch (button.getState()) {
-                case CONTINUE:
-                    beepingThread.resumeBeeping();
-                    break;
-                    
-                case PAUSED:
-                    beepingThread.pauseBeeping();
-                    break;
+                case CONTINUE -> beepingThread.resumeBeeping();   
+                case PAUSED   -> beepingThread.pauseBeeping();
             }
         });
         
