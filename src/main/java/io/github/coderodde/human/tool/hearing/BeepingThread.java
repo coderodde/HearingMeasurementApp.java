@@ -1,13 +1,24 @@
 package io.github.coderodde.human.tool.hearing;
 
+import static java.util.logging.Level.SEVERE;
+import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.scene.control.Label;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 
 /**
  * This class implements the beeping thread.
  */
 public final class BeepingThread extends Thread {
+    
+    private static final float SAMPLE_RATE = 44_100.0f;
+    private static final int MIN_FREQUENCY = 10;
+    private static final int MAX_FREQUENCY = 20_000;
+    private static final int BYTES_PER_SAMPLE = 2;
+    private static final double TWO_PI = 2.0 * Math.PI;
     
     private volatile boolean running = true;
     private volatile boolean paused  = true;
@@ -15,61 +26,103 @@ public final class BeepingThread extends Thread {
     private final Object lock = new Object();
     private final Label label;
     
+    private double phase = 0.0;
+    private int frequency = MIN_FREQUENCY;
+    
     public BeepingThread(Label label) {
         this.label = label;
+        setDaemon(true);
     }
     
     @Override
     public void run() {
-        int frequency = HearingMeasurementApp.MINIMUM_FREQUENCY;
+        AudioFormat format = new AudioFormat(SAMPLE_RATE,
+                                             16,
+                                             1,
+                                             true,
+                                             false);
         
-        while (running) {
-            synchronized (lock) {
-                while (paused && running) {
-                    try {
-                        lock.wait();
-                    } catch (InterruptedException ex) {
-                        return;
-                    }
-                }
-            }
+        try (SourceDataLine line = AudioSystem.getSourceDataLine(format)) {
+            line.open(format);
+            line.start();
             
-            int currentFrequency = frequency;
-            
-            Platform.runLater(() -> {
-                label.setText(String.format("%d Hz", currentFrequency));
-            });
-            
-            try {
-                Beeper.beep(frequency, 20);
-            } catch (LineUnavailableException ex) {
-                System.getLogger(BeepingThread.class.getName())
-                    .log(System.Logger.Level.ERROR, (String) null, ex);
+            while (running && frequency <= MAX_FREQUENCY) {
+                waitIfPaused();
                 
-                return;
+                if (!running) {
+                    break;
+                }
+                
+                playOneMillisecond(line);
+                
+                int currentFrequency = frequency;
+                
+                Platform.runLater(
+                    () -> label.setText(currentFrequency + " Hz"));
+                
+                ++frequency;
             }
             
-            frequency += 1;
-//            
-//            try {
-//                Thread.sleep(20L);
-//            } catch (InterruptedException ignored) {
-//                
-//            }
+            line.drain();
+        } catch (LineUnavailableException ex) {
+            Logger.getLogger(getClass()
+                  .getSimpleName()).log(SEVERE, "Audio failed.");
             
-            if (frequency > HearingMeasurementApp.MAXIMUM_FREQUENCY) {
-                return;
+            return;
+        }
+    }
+
+    private void playOneMillisecond(SourceDataLine line) {
+        int samples = samplesInOneMillisecond(frequency);
+        byte[] buffer = new byte[samples * BYTES_PER_SAMPLE];
+        
+        double phaseIncrement = TWO_PI * frequency / SAMPLE_RATE;
+        
+        int index = 0;
+        
+        for (int i = 0; i < samples; ++i) {
+            short sample = (short) (Math.sin(phase) * Short.MAX_VALUE);
+            
+            buffer[index++] = (byte) (sample & 0xff);
+            buffer[index++] = (byte) (sample >>> 8);
+            
+            phase += phaseIncrement;
+            
+            if (phase >= TWO_PI) {
+                phase -= TWO_PI;
+            }
+        }
+        
+        line.write(buffer, 0, buffer.length);
+    }
+    
+    private static int samplesInOneMillisecond(int millisecondIndex) {
+        int a = (int) Math.round(SAMPLE_RATE *  millisecondIndex / 1000.0);
+        int b = (int) Math.round(SAMPLE_RATE * (millisecondIndex + 1) / 1000.0);
+        
+        return b - a;
+    }
+    
+    private void waitIfPaused() {
+        synchronized (lock) {
+            while (paused && running) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException ex) {
+                    running = false;
+                    return;
+                }
             }
         }
     }
-    
+        
     public void pauseBeeping() {
         paused = true;
     }
     
     public void resumeBeeping() {
         synchronized (lock) {
-            paused = false;
+            paused = true;
             lock.notifyAll();
         }
     }

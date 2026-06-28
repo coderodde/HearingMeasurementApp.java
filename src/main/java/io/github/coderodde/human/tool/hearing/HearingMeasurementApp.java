@@ -26,12 +26,12 @@ public class HearingMeasurementApp extends Application {
     }
     
     public static void main(String[] args) {
-        try {
-            Beeper.beep(100, 3000);
-//        launch(args);
-        } catch (LineUnavailableException ex) {
-            System.getLogger(HearingMeasurementApp.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
+        launch(args);
+//        try {
+////            Beeper.beep(100, 3000);
+//        } catch (LineUnavailableException ex) {
+//            System.getLogger(HearingMeasurementApp.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+//        }
     }
     
     @Override
@@ -60,7 +60,6 @@ public class HearingMeasurementApp extends Application {
         VBox.setVgrow(button, Priority.ALWAYS);
         
         BeepingThread beepingThread = new BeepingThread(label);
-        beepingThread.setDaemon(true);
         beepingThread.start();
         
         button.setOnAction(e -> { 
@@ -84,7 +83,7 @@ public class HearingMeasurementApp extends Application {
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ESCAPE) {
                 stage.close();
-                beepingThread.interrupt();
+                beepingThread.terminate();
             }
         });
         
