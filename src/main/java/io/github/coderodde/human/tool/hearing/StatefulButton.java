@@ -9,7 +9,7 @@ public final class StatefulButton extends Button {
     
     public enum State {
         START,
-        STOP,
+        PAUSED,
         CONTINUE;
     }
     
@@ -32,10 +32,10 @@ public final class StatefulButton extends Button {
                 
             case CONTINUE:
                 setText("Continue");
-                state = State.STOP;
+                state = State.PAUSED;
                 break;
                 
-            case STOP:
+            case PAUSED:
                 setText("Pause");
                 state = State.CONTINUE;
                 break;

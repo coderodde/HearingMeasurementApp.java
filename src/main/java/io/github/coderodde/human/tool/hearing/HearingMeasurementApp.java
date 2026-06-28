@@ -10,6 +10,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javax.sound.sampled.LineUnavailableException;
 
 /**
  * This class contains the entry point to the actual hearing tool program.
@@ -20,47 +21,19 @@ public class HearingMeasurementApp extends Application {
     public static final int MAXIMUM_FREQUENCY = 32_767;
     public static final int MINIMUM_DURATION  = 1;
     
+    static {
+        System.loadLibrary("BeepJNIDLL");
+    }
+    
     public static void main(String[] args) {
-        launch(args);
-    }
-    
-    public static void beep(int frequency, int duration) {
-        checkFrequency(frequency);
-        checkDuration(duration);
-        beepImpl(frequency, duration);
-    }
-    
-    private static native void beepImpl(int frequency, int duration);
-    
-    private static void checkFrequency(int frequency) {
-        if (frequency < MINIMUM_FREQUENCY) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "frequency (%d) < MINIMUM_FREQUENCY (%d).",
-                    frequency,
-                    MINIMUM_FREQUENCY));
-        }
-        
-        if (frequency > MAXIMUM_FREQUENCY) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "frequency (%d) > MAXIMUM_FREQUENCY (%d).",
-                    frequency,
-                    MAXIMUM_FREQUENCY));
+        try {
+            Beeper.beep(100, 3000);
+//        launch(args);
+        } catch (LineUnavailableException ex) {
+            System.getLogger(HearingMeasurementApp.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
     }
     
-    private static void checkDuration(int duration) {
-        if (duration < MINIMUM_DURATION) {
-            throw new IllegalArgumentException(
-                String.format(
-                    "duration (%d) < MINIMUM_DURATION (%d).",
-                    duration,
-                    MINIMUM_DURATION));
-        }
-        
-    }
-
     @Override
     public void start(Stage stage) {
         Label label = new Label("... Hz");
@@ -98,7 +71,7 @@ public class HearingMeasurementApp extends Application {
                     beepingThread.resumeBeeping();
                     break;
                     
-                case STOP:
+                case PAUSED:
                     beepingThread.pauseBeeping();
                     break;
             }
@@ -111,7 +84,12 @@ public class HearingMeasurementApp extends Application {
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ESCAPE) {
                 stage.close();
+                beepingThread.interrupt();
             }
+        });
+        
+        stage.setOnCloseRequest(e -> {
+            beepingThread.interrupt();
         });
         
         stage.setTitle("Hearing test");
