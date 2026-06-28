@@ -15,7 +15,7 @@ import javax.sound.sampled.SourceDataLine;
 public final class BeepingThread extends Thread {
     
     private static final float SAMPLE_RATE = 44_100.0f;
-    private static final int MIN_FREQUENCY = 10;
+    public  static final int MIN_FREQUENCY = 10;
     private static final int MAX_FREQUENCY = 20_000;
     private static final int BYTES_PER_SAMPLE = 2;
     private static final double TWO_PI = 2.0 * Math.PI;
@@ -122,7 +122,7 @@ public final class BeepingThread extends Thread {
     
     public void resumeBeeping() {
         synchronized (lock) {
-            paused = true;
+            paused = false;
             lock.notifyAll();
         }
     }

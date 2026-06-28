@@ -10,33 +10,19 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-import javax.sound.sampled.LineUnavailableException;
 
 /**
  * This class contains the entry point to the actual hearing tool program.
  */
 public class HearingMeasurementApp extends Application {
     
-    public static final int MINIMUM_FREQUENCY = 37;
-    public static final int MAXIMUM_FREQUENCY = 32_767;
-    public static final int MINIMUM_DURATION  = 1;
-    
-    static {
-        System.loadLibrary("BeepJNIDLL");
-    }
-    
     public static void main(String[] args) {
         launch(args);
-//        try {
-////            Beeper.beep(100, 3000);
-//        } catch (LineUnavailableException ex) {
-//            System.getLogger(HearingMeasurementApp.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-//        }
     }
     
     @Override
     public void start(Stage stage) {
-        Label label = new Label("... Hz");
+        Label label = new Label(BeepingThread.MIN_FREQUENCY + " Hz");
         StatefulButton button = new StatefulButton();
         
         Font labelFont  = Font.font("System", FontWeight.BOLD, 48);
